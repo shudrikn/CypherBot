@@ -5,7 +5,7 @@ import threading
 import time
 
 import telebot
-from telebot import types
+from telebot import apihelper, types
 
 from Crypto import Random
 from Crypto.Cipher import AES
@@ -179,6 +179,7 @@ def handle(call):
         handlers[chat_id].action(call.data)
 
 # Запускаем бота
+apihelper.RETRY_ON_ERROR = True        
 while True:
         try:
             bot.polling(none_stop=True, interval=0)
