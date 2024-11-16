@@ -78,8 +78,8 @@ def decrypt(encoded_ciphertext, key):
         return "Неверный пароль"
 
 class Dialog:
-    def __init__(self, chat_id):
-        self.chat_id = chat_id
+    def __init__(self, user_id):
+        self.user_id = user_id
         self.data = ""
         self.key = ""
         self.operation = CryptoOperations.unknown
@@ -89,7 +89,7 @@ class Dialog:
         
     def delete_prev_message(self):
         if self.previosly_message:
-            bot.delete_message(self.chat_id, self.previosly_message)
+            bot.delete_message(self.user_id, self.previosly_message)
             self.previosly_message = None
 
     def show_choose_operation_buttons(self):
@@ -100,7 +100,7 @@ class Dialog:
 
         markup.row(buttonA, buttonB)
         self.action = self.choose_operation
-        self.previosly_message = bot.send_message(self.chat_id, 'Выбери операцию', reply_markup=markup).message_id
+        self.previosly_message = bot.send_message(self.user_id, 'Выбери операцию', reply_markup=markup).message_id
 
     def choose_operation(self, operation):
         try:
@@ -111,7 +111,7 @@ class Dialog:
                 message = 'Напиши текст который хочешь защитить'
             elif self.operation == CryptoOperations.decrypt:
                 message = 'Перешли мне сообщение, которое нужно прочитать'
-            self.previosly_message = bot.send_message(self.chat_id, message).message_id
+            self.previosly_message = bot.send_message(self.user_id, message).message_id
             
         except:
             pass
@@ -122,7 +122,7 @@ class Dialog:
         self.data = data.text
         self.action = self.get_key
         self.delete_prev_message()
-        self.previosly_message = bot.send_message(self.chat_id, 'Введи пароль').message_id
+        self.previosly_message = bot.send_message(self.user_id, 'Введи пароль').message_id
     
     def get_key(self, key):
         if not hasattr(key, 'text'):
@@ -138,8 +138,8 @@ class Dialog:
             result_deletion_delay = char_read_time * len(response)
 
         self.delete_prev_message()
-        result_message_id = bot.send_message(self.chat_id, response, protect_content=False).message_id
-        t=threading.Timer(result_deletion_delay, lambda message_id: bot.delete_message(self.chat_id, message_id), [result_message_id])
+        result_message_id = bot.send_message(self.user_id, response, protect_content=False).message_id
+        t=threading.Timer(result_deletion_delay, lambda message_id: bot.delete_message(self.user_id, message_id), [result_message_id])
         t.start()
 
         global use_counter 
@@ -150,7 +150,7 @@ class Dialog:
 
     def reminder(self):
         message = 'Не забывай про безопасность своей переписки! Введи /start чтобы продолжить пользоваться ботом.'
-        bot.send_message(self.chat_id, message).message_id
+        bot.send_message(self.user_id, message).message_id
 
 
 handlers = {}
@@ -158,25 +158,28 @@ handlers = {}
 # Функция, обрабатывающая команду /start
 @bot.message_handler(commands=["start"])
 def start(message):
-    chat_id = message.chat.id
-    handlers[chat_id] = Dialog(chat_id)
+    user_id = message.from_user.id
+    handlers[user_id] = Dialog(user_id)
+    print(user_id)
 
 # Получение сообщений от юзера
 @bot.message_handler(content_types=["text"])
 def handle_text(message):
-    chat_id = message.chat.id
-    if not(chat_id in handlers):
-        handlers[chat_id] = Dialog(chat_id)
-    handlers[chat_id].action(message)
-    bot.delete_message(chat_id, message.id)
+    user_id = message.from_user.id
+    if not(user_id in handlers):
+        handlers[user_id] = Dialog(user_id)
+        print(user_id)
+        
+    handlers[user_id].action(message)
+    bot.delete_message(user_id, message.id)
 
 @bot.callback_query_handler(func=lambda call: True)
 def handle(call):
-    chat_id = call.message.chat.id
+    user_id = call.from_user.id
 
-    handle = handlers.get(chat_id)
+    handle = handlers.get(user_id)
     if handle != None:
-        handlers[chat_id].action(call.data)
+        handlers[user_id].action(call.data)
 
 # Запускаем бота
 apihelper.RETRY_ON_ERROR = True        
